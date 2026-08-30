@@ -67,7 +67,7 @@ export const AI_GOVERNANCE_EXPECTED_ATTESTATION_POLICY = Object.freeze({
 const REQUIRED_COMMANDS = [
   'node scripts/ci/check-version-consistency.mjs',
   'node --test scripts/ci/*.test.mjs',
-  'node --test --test-concurrency=4 scripts/mcp/*.test.mjs',
+  'node --test --test-concurrency=2 scripts/mcp/*.test.mjs',
   'node scripts/ci/check-ai-evolution-evals.mjs',
   'node scripts/ci/check-ai-asset-distribution.mjs --head',
   'node scripts/ci/write-ai-governance-artifacts.mjs',

@@ -16,7 +16,7 @@ run_in_frontend "Frontend: lint" npm run lint
 run_in_frontend "Frontend: dependency security audit" env npm_config_registry=https://registry.npmjs.org npm run audit:security
 run_in_frontend "Frontend: unit tests" npm test
 run_in_root "Governance: Node script unit tests" node --test scripts/ci/*.test.mjs
-run_in_root "Governance: MCP server unit tests" node --test --test-concurrency=4 scripts/mcp/*.test.mjs
+run_in_root "Governance: MCP server unit tests" node --test --test-concurrency=2 scripts/mcp/*.test.mjs
 run_in_root "Governance: project plugin probe tests" node --test plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/*.test.mjs
 run_in_root "Governance: project plugin config auditor tests" python3 -B -m unittest discover -s plugins/codex-mcp-config-auditor/scripts -p 'test_*.py'
 run_in_root "Governance: AI evolution evals" node scripts/ci/check-ai-evolution-evals.mjs

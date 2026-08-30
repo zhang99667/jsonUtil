@@ -33,9 +33,9 @@
 | `docs/AI-TOOLS-SETUP.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-29 | 工具索引 | 区分跨客户端 skill/Agent discovery、repo catalog、显式安装、fresh task 与 runtime trust，并登记三端 auditor 只读能力边界 | 必需文件、docs/AI 引用规则、资产发现规则 |
 | `docs/AI-ASSET-REGISTRY.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-31 | 资产账本 | 登记所有关键 AI 协作资产、治理脚本和显式豁免文件 | 必需文件、资产注册表结构化校验、资产发现规则 |
 | `.github/PULL_REQUEST_TEMPLATE.md` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-09 | 人工门禁 | 要求 PR 说明 AI 资产注册表、决策账本、CHANGELOG、治理校验、可维护性预算、负向测试、显式豁免以及 Copilot 根入口、Cursor rules、MCP 配置、instructions / prompt / custom agent / chatmode 入口处理 | 必需文件、PR 模板引用规则 |
-| `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | PR/push CI 控制面 | 每个执行 required command 的 job 都使用完整 Git 历史；只有该 job 同一 checkout step 的 `fetch-depth: 0` 才满足契约，required command 不得静态禁用、忽略失败、获得 attestation 特权或用 shell 分片自动写 outcome；MCP 文件并发固定为 4 | 必需文件、资产注册表结构化校验 |
-| `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | 定时治理 | 使用完整 Git 历史运行 HEAD 分发和定时治理；同 step 绑定 checkout 与 `fetch-depth: 0`，拒绝 required command 的静态 false/continue-on-error 和 shell 分片 outcome 写账，并以 4 路 MCP 文件并发隔离 component-only capture 与可选 signer | 必需文件、资产注册表结构化校验 |
-| `scripts/ci/local-ci.sh` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | 本地 CI 入口 | 与 GitHub CI 命令契约对齐，fail-fast 运行 workspace 分发、治理、预算和项目验证；MCP 文件并发与 CI 同步固定为 4 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `.github/workflows/ci.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | PR/push CI 控制面 | 每个执行 required command 的 job 都使用完整 Git 历史；只有该 job 同一 checkout step 的 `fetch-depth: 0` 才满足契约，required command 不得静态禁用、忽略失败、获得 attestation 特权或用 shell 分片自动写 outcome；MCP 文件并发固定为 2 | 必需文件、资产注册表结构化校验 |
+| `.github/workflows/ai-governance.yml` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | 定时治理 | 使用完整 Git 历史运行 HEAD 分发和定时治理；同 step 绑定 checkout 与 `fetch-depth: 0`，拒绝 required command 的静态 false/continue-on-error 和 shell 分片 outcome 写账，并以 2 路 MCP 文件并发隔离 component-only capture 与可选 signer | 必需文件、资产注册表结构化校验 |
+| `scripts/ci/local-ci.sh` | 治理门禁 | 项目维护者 | 发布前复核 | 2026-08-30 | 本地 CI 入口 | 与 GitHub CI 命令契约对齐，fail-fast 运行 workspace 分发、治理、预算和项目验证；MCP 文件并发与 CI 同步固定为 2 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/local-ci-lib.sh` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 本地 CI helper | 只维护有界日志、工作目录切换与 Java/Maven fallback，不吞掉子命令失败 | 必需文件、资产注册表结构化校验、可维护性预算 |
 
 ## 工具入口与可迁移技能
@@ -122,7 +122,7 @@
 | `scripts/ci/aiGovernanceValidationChangedSet.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-13 | Changed-set 集成红队 | 锁 Git flag/entry、路径、filter/ignore、mode、raw digest、精确根与报告 schema 负例 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationChangedSetGitInventory.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Changed-set Git authority | 单源维护精确根、HEAD/index/flag/untracked 原始 inventory、index 身份与双遍漂移复核 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationChangedSetGitInventory.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-13 | Git authority 直测 | 锁专职导出面、NUL/UTF-8 parser、异常路径保真与脱敏失败 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/ci/aiGovernanceValidationCommandRegistry.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-30 | Validation 命令注册表 | 将 display 映射为无 shell 只读 descriptor，安全展开测试文件并复用统一稳定 stat 身份；MCP descriptor 显式绑定 4 路文件并发 | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/ci/aiGovernanceValidationCommandRegistry.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-30 | Validation 命令注册表 | 将 display 映射为无 shell 只读 descriptor，安全展开测试文件并复用统一稳定 stat 身份；MCP descriptor 显式绑定 2 路文件并发 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationCommandRegistry.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-30 | 命令注册表红队 | 锁 13 条命令、descriptor digest、MCP 并发参数与 test 文件边界 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationRuntimePrimitives.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-13 | Runtime 安全原语 | 单源维护平台 fail-closed、路径包含、稳定 stat 记录/比较与 SHA-256，不承担领域流程 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/ci/aiGovernanceValidationWorkspaceRuntime.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-09 | Workspace runtime | 绑定精确 Git 根，验证受信临时基座/owner/0700，逐命令隔离且只删未漂移空目录；Windows 暂 fail closed | 必需文件、资产注册表结构化校验、可维护性预算 |
@@ -348,7 +348,7 @@
 | `scripts/mcp/jsonutils-governance-decisions.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-10 | 本地 MCP 支撑 | 复用决策账本 Markdown 表解析器，bounded 输出最近治理决策、回写文件和锁定命令，供 MCP agent 快速理解规则演进脉络 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-handoff.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-14 | 本地 MCP 支撑 | 独立组合治理上下文、基于完整事实集的 AI 基建状态、worktree 和风险；直接复用治理报告的 workspace/index/HEAD 分发就绪度，top 只裁剪展示，真实 stdio 与 scorecard 聚合保持一致 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-validation-plan.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-07-13 | 本地 MCP 支撑 | 基于权威 raw changed-set 组装有界展示、完整只读命令、人工复核、覆盖范围和未分类摘要；本身不执行命令 | 必需文件、资产注册表结构化校验、可维护性预算 |
-| `scripts/mcp/jsonutils-governance-validation-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-30 | 本地 MCP 支撑 | 直接复用 AI 资产 discovery pattern 与跨工具 MCP 配置列表，将 GitHub 自定义入口、`rules/ai-*`、`.gitignore`、插件、eval、MCP、CI、发布及 `ARCHITECTURE.md` / `docs/CICD.md` 部署文档分类到固定只读检查；MCP 测试固定 4 路文件并发，三视图 whitespace CLI 仍是非分类 catch-all | 必需文件、资产注册表结构化校验、可维护性预算 |
+| `scripts/mcp/jsonutils-governance-validation-rules.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-30 | 本地 MCP 支撑 | 直接复用 AI 资产 discovery pattern 与跨工具 MCP 配置列表，将 GitHub 自定义入口、`rules/ai-*`、`.gitignore`、插件、eval、MCP、CI、发布及 `ARCHITECTURE.md` / `docs/CICD.md` 部署文档分类到固定只读检查；MCP 测试固定 2 路文件并发，三视图 whitespace CLI 仍是非分类 catch-all | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-worktree.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-11 | MCP worktree orchestration | 固定执行 hermetic `git status --porcelain=v1 --branch --untracked-files=all`，捕获错误并组合稳定 snapshot schema；不开放任意 git 参数 | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-worktree-parser.mjs` | 协作资产 | 项目维护者 | 变更时复核 | 2026-08-11 | MCP worktree parser | 单源维护 NUL porcelain branch/status/rename 解析、路径校验、状态计数、完整 changed set 与 bounded 样本，不执行 Git | 必需文件、资产注册表结构化校验、可维护性预算 |
 | `scripts/mcp/jsonutils-governance-worktree-parser.test.mjs` | 协作资产 | AI 助手协同 | 变更时复核 | 2026-08-11 | MCP worktree parser 契约 | 直接锁定 branch、copy/conflict、Unicode/rename、非法 UTF-8、缺失记录、越界路径和 bounded 样本 | 必需文件、资产注册表结构化校验、可维护性预算 |

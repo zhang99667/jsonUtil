@@ -1,5 +1,16 @@
 # 更新日志 (Changelog)
 
+## v1.8.1052 (2026-08-30) - 收紧 MCP CI 并发余量
+
+### 🐛 Bug 修复
+
+- **共享 Runner 限流**: 完整 MCP 门禁的文件级并发从 4 收紧为 2，避免 fresh governance worker 在 GitHub 共享 runner 上争抢 CPU/进程资源触发 30 秒生产保护
+
+### 🏗️ 架构与基础设施
+
+- **命令契约同源**: CI、定时治理、本地 CI、validation registry 与 MCP validation plan 统一使用 2 路文件并发，保留并发覆盖；生产 worker 超时、取消、进程组、输出与协议边界不变
+- **失败证据固化**: 将 `5d73856d` 的 GitHub CI 单点失败与同 SHA 本地 76 项全绿对照写入治理决策，拒绝靠重跑或放宽生产保护换绿
+
 ## v1.8.1051 (2026-08-30) - 收紧项目插件 I/O 权威
 
 ### 🐛 Bug 修复
