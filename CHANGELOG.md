@@ -1,5 +1,18 @@
 # 更新日志 (Changelog)
 
+## v1.8.1050 (2026-08-30) - 闭合项目插件缓存权威
+
+### 🐛 Bug 修复
+
+- **Cache 根闭集**: `jsonutils-project` cache 根只接受三个固定项目插件目录，未知文件或目录统一以 `PROJECT_PLUGIN_CACHE_PATH_UNSAFE` fail closed，不再忽略未登记节点后错误报告 ready
+- **诊断归一**: cache 路径解析和目录枚举失败不回显底层文件系统错误，保持固定无值诊断
+
+### 🏗️ 架构与基础设施
+
+- **Cache 变化轴拆分**: 新增 84 行 `aiGovernanceProjectPluginCache.mjs` 单源维护 canonical `CODEX_HOME`、marketplace 根闭集、唯一 leaf、content lock mismatch 与安装根投影，lifecycle 从 390 行收缩到 335 行
+- **代表负例锁定**: 新增未知普通文件与目录红测，必需清单、资产注册、最小合格仓库 import 图和可维护性预算同步登记新叶子
+- **证据边界不变**: 本次只形成 project-plugin cache component 证据，不执行真实插件 `--apply` 或模型 trial，behavior coverage 与仓外 protected runtime/signer blocker 保持不变
+
 ## v1.8.1049 (2026-08-28) - 收紧项目插件内容锁事务
 
 ### 🐛 Bug 修复

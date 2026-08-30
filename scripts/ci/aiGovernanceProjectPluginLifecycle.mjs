@@ -3,6 +3,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { captureProjectPluginCommand } from './aiGovernanceProjectPluginCommand.mjs';
+import {
+  inspectProjectPluginCache,
+  projectPluginCacheRoot,
+} from './aiGovernanceProjectPluginCache.mjs';
 import { buildProjectPluginLock } from './aiGovernanceProjectPluginLock.mjs';
 import {
   buildProjectPluginLifecycleReport as report,
@@ -22,22 +26,6 @@ import {
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
 export { PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE, PROJECT_PLUGIN_MARKETPLACE };
-const lstatIfExists = (target) => {
-  try { return fs.lstatSync(target); }
-  catch (error) {
-    if (error?.code === 'ENOENT') return null;
-    throw failure('PROJECT_PLUGIN_CACHE_PATH_UNSAFE');
-  }
-};
-const projectPluginCacheRoot = (codexHome) => {
-  const absolute = path.resolve(codexHome);
-  let canonicalHome = absolute;
-  try { canonicalHome = fs.realpathSync(absolute); }
-  catch (error) {
-    if (error?.code !== 'ENOENT') throw failure('PROJECT_PLUGIN_CACHE_PATH_UNSAFE');
-  }
-  return path.join(canonicalHome, 'plugins/cache', PROJECT_PLUGIN_MARKETPLACE);
-};
 
 export const runCodexJsonCommand = async options => {
   let output;
@@ -126,49 +114,6 @@ const queryCodexState = async ({ root, expected, binary, runCommand }) => {
     }
   }
   return { marketplaces: marketplaces.marketplaces, installed: plugins.installed, available: plugins.available };
-};
-
-export const inspectProjectPluginCache = async ({ root, expected, codexHome }) => {
-  const { collectInstalledProjectPluginFailures, collectProjectPluginLockFailures } = await import(
-    './aiGovernanceProjectPluginLock.mjs'
-  );
-  if (collectProjectPluginLockFailures(root).length > 0) throw failure('PROJECT_PLUGIN_LOCK_INVALID');
-  const cacheRoot = projectPluginCacheRoot(codexHome);
-  const canonicalHome = path.dirname(path.dirname(path.dirname(cacheRoot)));
-  for (const ancestor of [path.join(canonicalHome, 'plugins'), path.dirname(cacheRoot), cacheRoot]) {
-    const ancestorStat = lstatIfExists(ancestor);
-    if (!ancestorStat) continue;
-    if (!ancestorStat.isDirectory() || ancestorStat.isSymbolicLink()) throw failure('PROJECT_PLUGIN_CACHE_PATH_UNSAFE');
-  }
-  const installedRoots = new Map();
-  if (lstatIfExists(cacheRoot)) {
-    for (const plugin of expected) {
-      const pluginRoot = path.join(cacheRoot, plugin.name);
-      const pluginStat = lstatIfExists(pluginRoot);
-      if (pluginStat) {
-        if (!pluginStat.isDirectory() || pluginStat.isSymbolicLink()) {
-          throw failure('PROJECT_PLUGIN_CACHE_PATH_UNSAFE');
-        }
-      }
-      if (!pluginStat) continue;
-      const entries = fs.readdirSync(pluginRoot, { withFileTypes: true });
-      if (entries.length > 1 || entries.some(entry => (entry.name !== 'local' && !isStrictSemver(entry.name))
-        || !entry.isDirectory() || entry.isSymbolicLink())) {
-        throw failure('PROJECT_PLUGIN_CACHE_PATH_UNSAFE');
-      }
-      if (entries.length === 1) installedRoots.set(plugin.selector, path.join(pluginRoot, entries[0].name));
-    }
-  }
-  let failures;
-  try { failures = collectInstalledProjectPluginFailures({ rootDir: root, codexHome }); }
-  catch { throw failure('PROJECT_PLUGIN_CACHE_UNKNOWN'); }
-  const mismatches = new Set();
-  for (const item of failures) {
-    const plugin = expected.find(candidate => item.startsWith(`${candidate.selector}:`));
-    if (!plugin) throw failure('PROJECT_PLUGIN_CACHE_UNKNOWN');
-    mismatches.add(plugin.selector);
-  }
-  return { mismatches, installedRoots };
 };
 
 const inspectState = async ({ root, expected, binary, runCommand, inspectCache, codexHome }) => {

@@ -6,10 +6,10 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import {
-  inspectProjectPluginCache,
   runCodexJsonCommand,
   runProjectPluginLifecycle,
 } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { inspectProjectPluginCache } from './aiGovernanceProjectPluginCache.mjs';
 import { buildProjectPluginLock } from './aiGovernanceProjectPluginLock.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginFiles.mjs';
 
@@ -390,6 +390,21 @@ test('cache 中间层符号链接在读取插件字节前 fail closed', () => wi
   const result = await runProjectPluginLifecycle({ rootDir: root, codexHome, runCommand: fake.runCommand });
   assert.deepEqual(result.failures, ['PROJECT_PLUGIN_CACHE_PATH_UNSAFE']);
   assert.deepEqual(result.mutations, { attempted: 0, succeeded: 0 });
+}));
+
+test('cache marketplace 根只接受固定项目插件目录', () => withProject(async ({ root, codexHome }) => {
+  installCache(root, codexHome);
+  const cacheRoot = path.join(codexHome, 'plugins/cache/jsonutils-project');
+  const fake = createCodexRunner({ root, installed: AI_GOVERNANCE_PROJECT_PLUGIN_NAMES });
+  for (const kind of ['file', 'directory']) {
+    const unexpected = path.join(cacheRoot, `unexpected-${kind}`);
+    if (kind === 'file') fs.writeFileSync(unexpected, 'unexpected');
+    else fs.mkdirSync(unexpected);
+    const result = await runProjectPluginLifecycle({ rootDir: root, codexHome, runCommand: fake.runCommand });
+    assert.deepEqual(result.failures, ['PROJECT_PLUGIN_CACHE_PATH_UNSAFE']);
+    assert.deepEqual(result.mutations, { attempted: 0, succeeded: 0 });
+    fs.rmSync(unexpected, { recursive: true });
+  }
 }));
 
 test('spawn 始终使用 argv 与 shell:false，特殊路径保持单一参数', async () => {

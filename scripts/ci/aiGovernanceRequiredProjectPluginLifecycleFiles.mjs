@@ -8,6 +8,7 @@ export const AI_GOVERNANCE_REQUIRED_PROJECT_PLUGIN_LIFECYCLE_FILES = Object.free
   'scripts/ci/aiGovernanceRequiredProjectPluginLifecycleFiles.mjs',
   'scripts/ci/aiGovernanceProjectPluginCommand.mjs',
   'scripts/ci/aiGovernanceProjectPluginCommand.test.mjs',
+  'scripts/ci/aiGovernanceProjectPluginCache.mjs',
   'scripts/ci/aiGovernanceProjectPluginLifecycleContract.mjs',
   'scripts/ci/aiGovernanceProjectPluginLifecycleContract.test.mjs',
   'scripts/ci/aiGovernanceProjectPluginLifecycle.mjs',
