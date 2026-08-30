@@ -6,7 +6,7 @@ export const governanceAiSkillContractTestCoreMaintainabilityBudgets = [
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillSectionTestFixtures.mjs', 50, 'AI 治理 skill 章节测试 fixture 应独立维护必读与按任务读取的完整章节正文'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillReleaseTestFixtures.mjs', 30, 'AI 治理 skill 发布测试 fixture 应独立维护发布追踪用 skill 和 CHANGELOG 脚手架'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillCommandContract.test.mjs', 80, 'AI 治理 skill 命令契约测试应独立维护 fenced cd 和 npm run 可达性负例'),
-  skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 75, 'AI 治理 skill 契约测试应独立维护 skill 发现和引用可达性负例'),
+  skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContract.test.mjs', 75, 'AI 治理 skill 契约测试应维护收集器不可变顺序、skill 发现和引用可达性负例'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContextBudgetContract.test.mjs', 100, 'AI 治理 skill 上下文预算测试应锁定必读、.codex、源码、JSON、目录与超预算边界'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillContextReferenceSet.test.mjs', 75, 'AI 治理 skill 上下文集合测试应拒绝 path-like 无效引用、跨引用漂移且忽略普通术语'),
   skillContractTestCoreBudget('scripts/ci/aiGovernanceSkillEvalContract.test.mjs', 70, 'AI 治理 skill eval 测试应锁定合法语料、解析失败、路由与可评分契约'),

@@ -9,7 +9,7 @@ import { collectSkillStructureContractFailures } from './aiGovernanceCodexSkillS
 import { collectSkillUiContractFailures } from './aiGovernanceCodexSkillUiContract.mjs';
 import { collectSkillProfileClassificationFailures } from './aiGovernanceCodexSkillProfiles.mjs';
 
-export const CODEX_SKILL_CONTRACT_COLLECTORS = [
+export const CODEX_SKILL_CONTRACT_COLLECTORS = Object.freeze([
   (_, file, content) => collectSkillStructureContractFailures(file, content),
   (_, file) => collectSkillProfileClassificationFailures(file),
   (rootDir, file) => collectSkillUiContractFailures(rootDir, file),
@@ -20,4 +20,4 @@ export const CODEX_SKILL_CONTRACT_COLLECTORS = [
   collectSkillDirectoryContractFailures,
   collectSkillNpmScriptContractFailures,
   collectSkillReleaseContractFailures,
-];
+]);

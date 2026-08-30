@@ -2,7 +2,7 @@ import { governanceAiSkillCommandMaintainabilityBudgets } from './maintainabilit
 const governanceAiSkillContractBudget = (file, maxLines, reason) => ({ file, maxLines, reason });
 export const governanceAiSkillContractMaintainabilityBudgets = [
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContract.mjs', 25, 'AI 治理 Codex skill 契约入口应只读取 skill 并执行契约收集器列表'),
-  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContractCollectors.mjs', 25, 'AI 治理 Codex skill 契约收集器列表应独立维护结构、章节、引用、目录、命令和发布契约顺序'),
+  governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContractCollectors.mjs', 30, 'AI 治理 Codex skill 契约收集器列表应以不可变有序注册表独立维护结构、章节、引用、目录、命令和发布契约顺序'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceStableUtf8File.mjs', 75, 'AI 治理稳定文本读取 helper 应统一锁定仓内普通单链接文件、64/256 KiB 上限、descriptor 稳定性与 fatal UTF-8'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContent.mjs', 20, 'AI 治理 Codex skill 内容读取 helper 应只将稳定文本读取状态映射为固定无值诊断'),
   governanceAiSkillContractBudget('scripts/ci/aiGovernanceCodexSkillContextBudgetContract.mjs', 55, 'AI 治理 Codex skill 上下文预算契约应只统计必读章节引用和 skill 本体字节数'),
