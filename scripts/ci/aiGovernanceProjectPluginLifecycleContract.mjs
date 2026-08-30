@@ -1,7 +1,5 @@
 // 单源维护项目插件 lifecycle 的固定失败与 component-only 报告契约。
 
-import path from 'node:path';
-
 import { isStrictSemver } from './aiGovernanceSemver.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
@@ -41,12 +39,9 @@ export const readExpectedProjectPlugins = (sourceSnapshot) => AI_GOVERNANCE_PROJ
   });
 });
 
-export const projectPluginLifecycleReportRoot = (root, rootDir) => {
-  if (typeof root === 'string' && root.length > 0) return root;
-  if (typeof rootDir !== 'string' || rootDir.length === 0) return INVALID_PROJECT_PLUGIN_ROOT;
-  try { return path.resolve(rootDir); }
-  catch { return INVALID_PROJECT_PLUGIN_ROOT; }
-};
+export const projectPluginLifecycleReportRoot = root => (
+  typeof root === 'string' && root.length > 0 ? root : INVALID_PROJECT_PLUGIN_ROOT
+);
 
 export const buildProjectPluginLifecycleReport = ({
   root,

@@ -1,5 +1,21 @@
 # 更新日志 (Changelog)
 
+## v1.8.1051 (2026-08-30) - 收紧项目插件 I/O 权威
+
+### 🐛 Bug 修复
+
+- **非法根脱敏**: lifecycle 与 write-lock 只在项目根 canonicalize 成功后投影路径；非空但不存在、非目录或其它非法输入统一返回 `<invalid-project-root>`，不再把本机路径写入 blocked 报告
+- **CLI JSON Fail Closed**: Codex JSON 输出统一使用 fatal UTF-8 和唯一 authority 解析，拒绝非法字节、顶层/嵌套/转义等价重复 key，不再接受 replacement character 或 last-wins 状态
+
+### 🏗️ 架构与基础设施
+
+- **命令职责归位**: binary 选择、进程执行、固定诊断与 JSON adapter 统一归入 85 行 command runtime，lifecycle 从 335 行缩减至 326 行，只保留 source/state/cache 与 mutation 编排
+- **行为证据补齐**: ownership case 升至 v8、corpus 升至 1.58.6，fixed runner 以两条可入账的有界命令直接执行 command 专测；deterministic writer 只在当前 workspace/index/HEAD 前置全绿后才生成候选，移除无视实际验证结果的 ownership 一律禁写旧分支
+- **MCP 门禁限流**: CI、定时治理、本地 CI 与 validation registry 将 MCP 测试文件并发固定为 4，保留并发覆盖的同时避免多个 fresh governance worker 争抢资源触发 30 秒生产保护；生产超时、取消、进程组和输出边界不变
+- **测试注册去重**: 项目插件聚合测试不再嵌套导入已由 runner 直接枚举的 command/lifecycle 测试，后代回收场景以 heartbeat 握手替代固定 120ms 启动假设，避免重复执行和受载竞态
+- **代表负例锁定**: 新增非空非法 root、敏感标记抑制、重复 JSON authority 和非法 UTF-8 回归，并同步资产注册、预算与决策账本
+- **证据边界不变**: 本次只刷新既有 deterministic ownership 证据，不执行真实插件 `--apply` 或模型 trial，不解除仓外 protected runtime/signer blocker
+
 ## v1.8.1050 (2026-08-30) - 闭合项目插件缓存权威
 
 ### 🐛 Bug 修复

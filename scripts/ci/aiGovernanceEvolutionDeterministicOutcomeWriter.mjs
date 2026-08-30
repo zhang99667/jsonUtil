@@ -26,7 +26,6 @@ import {
 } from './aiGovernanceEvolutionDeterministicOutcomeTransaction.mjs';
 
 export const AI_EVOLUTION_DETERMINISTIC_OUTCOME_WRITER_VERSION = '1.1.0';
-const OWNERSHIP_CASE_ID = 'rule-project-ai-asset-ownership';
 const RECEIPTS_RELATIVE_PATH = 'evals/ai-governance/trial-receipts.jsonl';
 const OUTCOMES_RELATIVE_PATH = 'evals/ai-governance/outcomes.jsonl';
 
@@ -72,9 +71,6 @@ const collectSelectedCases = ({ corpus, caseIds }) => {
     const descriptor = AI_EVOLUTION_EXECUTABLE_CASES[caseId];
     const corpusCase = casesById.get(caseId);
     if (!descriptor || !corpusCase) throw new Error(`不支持的 AI evolution case: ${caseId}`);
-    if (caseId === OWNERSHIP_CASE_ID) {
-      throw new Error('ownership case 需要当前 Git index/HEAD 分发证据，ledger writer 无法建立该前置，禁止直接入账');
-    }
     if (corpusCase.coverageClass !== 'behavior' || descriptor.evidenceScope !== 'deterministic-case') {
       throw new Error(`case \`${caseId}\` 不是可入账的 behavior deterministic-case`);
     }

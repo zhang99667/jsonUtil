@@ -5,10 +5,10 @@ const nodeTest = (...files) => ['--test', ...files];
 
 export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
   'rule-project-ai-asset-ownership': {
-    caseVersion: 7,
-    subjectVersion: '2026-07-14.3',
+    caseVersion: 8,
+    subjectVersion: '2026-08-30.1',
     evidenceScope: 'deterministic-case',
-    evidence: ['项目 marketplace/内容锁、官方 MCP companion 结构、完整 AI machine universe、三层分发就绪度、原始 Git 证据、CI 可达性、命令进程组回收与显式插件生命周期正反例', 'HEAD 可见不证明任意真实用户安装、当前任务注册、runtime 隔离或 signer trust'],
+    evidence: ['项目 marketplace/内容锁、官方 MCP companion 结构、完整 AI machine universe、三层分发就绪度、原始 Git 证据、CI 可达性、命令 JSON/root authority、进程组回收与显式插件生命周期正反例', 'HEAD 可见不证明任意真实用户安装、当前任务注册、runtime 隔离或 signer trust'],
     argsList: [nodeTest(
       'scripts/ci/aiGovernanceAssetDistribution.test.mjs',
       'scripts/ci/aiGovernanceAssetDistributionFiles.test.mjs',
@@ -16,13 +16,15 @@ export const AI_EVOLUTION_EXECUTABLE_CASES = Object.freeze({
       'scripts/ci/aiGovernanceAssetDistributionReadiness.test.mjs',
       'scripts/ci/aiGovernanceAssetDistributionRedteam.test.mjs',
       'scripts/ci/aiGovernanceMaturityScorecardDistribution.test.mjs',
+      'scripts/mcp/jsonutils-governance-handoff-distribution.test.mjs',
+    ), nodeTest(
       'scripts/ci/aiGovernanceCiContract.test.mjs',
       'scripts/ci/aiGovernanceScheduledWorkflowContract.test.mjs',
       'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
+      'scripts/ci/aiGovernanceProjectPluginCommand.test.mjs',
       'scripts/ci/aiGovernanceProjectPluginLock.test.mjs',
       'scripts/ci/aiGovernanceProjectPluginLifecycle.test.mjs',
       'scripts/ci/aiGovernanceProjectPlugins.test.mjs',
-      'scripts/mcp/jsonutils-governance-handoff-distribution.test.mjs',
     ), ['scripts/ci/check-ai-asset-distribution.mjs', '--workspace'],
     deliveryBlockedCommand(['scripts/ci/check-ai-asset-distribution.mjs', '--index'], 'distribution-index-not-ready'),
     deliveryBlockedCommand(['scripts/ci/check-ai-asset-distribution.mjs', '--head'], 'distribution-head-not-ready')],

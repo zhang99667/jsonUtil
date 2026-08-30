@@ -3,7 +3,7 @@ const ciCommandDescriptor = (command, workflowName, localCiLabel, localCommand =
 export const AI_GOVERNANCE_CI_COMMAND_DESCRIPTORS = [
   ciCommandDescriptor('node scripts/ci/check-version-consistency.mjs', 'Version consistency', 'Governance: version consistency'),
   ciCommandDescriptor('node --test scripts/ci/*.test.mjs', 'Node script unit tests', 'Governance: Node script unit tests'),
-  ciCommandDescriptor('node --test scripts/mcp/*.test.mjs', 'MCP server unit tests', 'Governance: MCP server unit tests'),
+  ciCommandDescriptor('node --test --test-concurrency=4 scripts/mcp/*.test.mjs', 'MCP server unit tests', 'Governance: MCP server unit tests'),
   ciCommandDescriptor('node --test plugins/ai-infra-controller-probe/skills/probe-codex-controller-runtime/scripts/*.test.mjs', 'Project plugin probe tests', 'Governance: project plugin probe tests'),
   ciCommandDescriptor("python3 -B -m unittest discover -s plugins/codex-mcp-config-auditor/scripts -p 'test_*.py'", 'Project plugin config auditor tests', 'Governance: project plugin config auditor tests'),
   ciCommandDescriptor('node scripts/ci/check-ai-evolution-evals.mjs', 'AI evolution evals', 'Governance: AI evolution evals'),

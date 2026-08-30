@@ -3,8 +3,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import './aiGovernanceProjectPluginCommand.test.mjs';
-import './aiGovernanceProjectPluginLifecycle.test.mjs';
 import { collectProjectPluginFailures } from './aiGovernanceProjectPlugins.mjs';
 const projectRoot = path.resolve(import.meta.dirname, '../..');
 const makeWritable = (target) => {

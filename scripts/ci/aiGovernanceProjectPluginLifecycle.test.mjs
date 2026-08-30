@@ -6,9 +6,9 @@ import path from 'node:path';
 import { test } from 'node:test';
 
 import {
-  runCodexJsonCommand,
   runProjectPluginLifecycle,
 } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { runCodexJsonCommand } from './aiGovernanceProjectPluginCommand.mjs';
 import { inspectProjectPluginCache } from './aiGovernanceProjectPluginCache.mjs';
 import { buildProjectPluginLock } from './aiGovernanceProjectPluginLock.mjs';
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginFiles.mjs';
@@ -430,13 +430,15 @@ test('spawn 始终使用 argv 与 shell:false，特殊路径保持单一参数',
 });
 
 test('非法 rootDir 返回脱敏 blocked 报告且不调用 Codex', async () => {
-  let commandCalls = 0;
-  const result = await runProjectPluginLifecycle({
-    rootDir: undefined,
-    runCommand: async () => (commandCalls += 1, {}),
-  });
-  assert.equal(result.status, 'blocked');
-  assert.equal(result.marketplace.expectedRoot, '<invalid-project-root>');
-  assert.deepEqual(result.failures, ['PROJECT_ROOT_INVALID']);
-  assert.equal(commandCalls, 0);
+  for (const rootDir of [undefined, '/private/sensitive-project']) {
+    let commandCalls = 0;
+    const result = await runProjectPluginLifecycle({
+      rootDir, runCommand: async () => (commandCalls += 1, {}),
+    });
+    assert.equal(result.status, 'blocked');
+    assert.equal(result.marketplace.expectedRoot, '<invalid-project-root>');
+    assert.equal(JSON.stringify(result).includes('sensitive-project'), false);
+    assert.deepEqual(result.failures, ['PROJECT_ROOT_INVALID']);
+    assert.equal(commandCalls, 0);
+  }
 });

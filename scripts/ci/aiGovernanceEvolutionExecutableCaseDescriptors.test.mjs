@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { test } from 'node:test';
 
 import { AI_EVOLUTION_EXECUTABLE_CASES } from './aiGovernanceEvolutionExecutableCases.mjs';
 import * as runnerModule from './aiGovernanceEvolutionCaseRunner.mjs';
 
-test('ownership v7 descriptor 锁定完整命令与 index/HEAD 交付原因', () => {
+test('ownership v8 descriptor 锁定完整命令与 index/HEAD 交付原因', () => {
   const descriptor = AI_EVOLUTION_EXECUTABLE_CASES['rule-project-ai-asset-ownership'];
+  assert.deepEqual([descriptor.caseVersion, descriptor.subjectVersion], [8, '2026-08-30.1']);
   assert.deepEqual(descriptor.argsList, [[
     '--test',
     'scripts/ci/aiGovernanceAssetDistribution.test.mjs',
@@ -14,13 +16,16 @@ test('ownership v7 descriptor 锁定完整命令与 index/HEAD 交付原因', ()
     'scripts/ci/aiGovernanceAssetDistributionReadiness.test.mjs',
     'scripts/ci/aiGovernanceAssetDistributionRedteam.test.mjs',
     'scripts/ci/aiGovernanceMaturityScorecardDistribution.test.mjs',
+    'scripts/mcp/jsonutils-governance-handoff-distribution.test.mjs',
+  ], [
+    '--test',
     'scripts/ci/aiGovernanceCiContract.test.mjs',
     'scripts/ci/aiGovernanceScheduledWorkflowContract.test.mjs',
     'scripts/ci/aiGovernanceProjectCliArgs.test.mjs',
+    'scripts/ci/aiGovernanceProjectPluginCommand.test.mjs',
     'scripts/ci/aiGovernanceProjectPluginLock.test.mjs',
     'scripts/ci/aiGovernanceProjectPluginLifecycle.test.mjs',
     'scripts/ci/aiGovernanceProjectPlugins.test.mjs',
-    'scripts/mcp/jsonutils-governance-handoff-distribution.test.mjs',
   ], ['scripts/ci/check-ai-asset-distribution.mjs', '--workspace'], {
     args: ['scripts/ci/check-ai-asset-distribution.mjs', '--index'],
     failureClass: 'delivery-blocked',
@@ -30,6 +35,11 @@ test('ownership v7 descriptor 锁定完整命令与 index/HEAD 交付原因', ()
     failureClass: 'delivery-blocked',
     reasonCode: 'distribution-head-not-ready',
   }]);
+});
+
+test('项目 plugin 聚合测试不嵌套注册 sibling test', () => {
+  const source = fs.readFileSync('scripts/ci/aiGovernanceProjectPlugins.test.mjs', 'utf8');
+  assert.doesNotMatch(source, /import\s+['"][^'"]+\.test\.mjs['"]/);
 });
 
 test('registry 锁定 outcome/paired writer 顺序与 validation 组件命令 display', () => {

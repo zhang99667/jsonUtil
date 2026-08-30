@@ -65,6 +65,7 @@ test('fixed runner 将 index/HEAD 交付前置缺失与 workspace 行为失败�
   const reports = [
     { status: 0, stdout: '', stderr: '' },
     { status: 0, stdout: '', stderr: '' },
+    { status: 0, stdout: '', stderr: '' },
     { status: 1, stdout: JSON.stringify({ reportType: 'ai-asset-distribution', scope: 'index', counts: { failures: 3 } }), stderr: '' },
     { status: 1, stdout: JSON.stringify({ reportType: 'ai-asset-distribution', scope: 'head', counts: { failures: 2 } }), stderr: '' },
   ];
@@ -75,9 +76,9 @@ test('fixed runner 将 index/HEAD 交付前置缺失与 workspace 行为失败�
   });
   assert.equal(report.results[0].failureClass, 'delivery-blocked');
   assert.equal(report.results[0].reasonCode, 'distribution-index-not-ready');
-  assert.equal(report.results[0].validations[2].failureClass, 'delivery-blocked');
-  assert.equal(report.results[0].validations[2].diagnostic, 'ai-asset-distribution/index: failures=3');
-  assert.equal(report.results[0].validations[3].reasonCode, 'distribution-head-not-ready');
+  assert.equal(report.results[0].validations[3].failureClass, 'delivery-blocked');
+  assert.equal(report.results[0].validations[3].diagnostic, 'ai-asset-distribution/index: failures=3');
+  assert.equal(report.results[0].validations[4].reasonCode, 'distribution-head-not-ready');
   assert.equal(report.counts.deliveryBlocked, 1);
   assert.equal(report.counts.behaviorFailed, 0);
   assert.doesNotMatch(report.results[0].diagnostic, /^}$/);

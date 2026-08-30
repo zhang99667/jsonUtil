@@ -122,7 +122,7 @@ test('preview 从安全快照派生 receipt/outcome，不修改真实 ledger 或
   assert.deepEqual(outcome.writeback.validationResults, receipt.validations);
 });
 
-test('preview 拒绝 ownership、component、unknown 与重复 case', (t) => {
+test('preview 由 fixed runner 建立 ownership 交付前置，并拒绝 component、unknown 与重复 case', (t) => {
   const fixture = createFixture(t);
   const base = {
     rootDir: fixture.rootDir,
@@ -131,9 +131,10 @@ test('preview 拒绝 ownership、component、unknown 与重复 case', (t) => {
     resolveRevision: () => REVISION_A,
     validateCandidate: candidateValidator(),
   };
-  assert.throws(() => prepareEvolutionDeterministicOutcomeBatch({
+  const ownership = prepareEvolutionDeterministicOutcomeBatch({
     ...base, caseIds: ['rule-project-ai-asset-ownership'],
-  }), /index\/HEAD 分发证据/);
+  });
+  assert.deepEqual(ownership.report.counts, { selected: 1, candidates: 1, alreadyCurrent: 0 });
   assert.throws(() => prepareEvolutionDeterministicOutcomeBatch({
     ...base, caseIds: ['mcp-fixed-tool-selection'],
   }), /behavior deterministic-case/);
@@ -168,6 +169,15 @@ test('preview 拒绝 ledger symlink、hardlink 和期间漂移', (t) => {
 
 test('runner、candidate replay 和 source-state 漂移均 fail closed', (t) => {
   const fixture = createFixture(t);
+  assert.throws(() => prepareEvolutionDeterministicOutcomeBatch({
+    rootDir: fixture.rootDir,
+    caseIds: ['rule-project-ai-asset-ownership'],
+    evaluatedAt: EVALUATED_AT,
+    runCases: () => ({ ok: false, results: [{ caseId: 'rule-project-ai-asset-ownership',
+      status: 'failed', diagnostic: 'ai-asset-distribution/head: failures=1' }] }),
+    resolveRevision: () => REVISION_A,
+    validateCandidate: candidateValidator(),
+  }), /ai-asset-distribution\/head/);
   assert.throws(() => prepare(fixture, {
     runCases: () => ({ ok: false, results: [{ caseId: CASE_ID, status: 'failed', diagnostic: 'fixture failure' }] }),
   }), /固定 runner 失败/);

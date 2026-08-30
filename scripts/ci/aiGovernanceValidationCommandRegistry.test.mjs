@@ -16,7 +16,7 @@ import {
   uniqueValidationCommands,
 } from '../mcp/jsonutils-governance-validation-rules.mjs';
 
-const MCP_TEST_DISPLAY = 'node --test --test-reporter=dot scripts/mcp/*.test.mjs';
+const MCP_TEST_DISPLAY = 'node --test --test-reporter=dot --test-concurrency=4 scripts/mcp/*.test.mjs';
 
 const runGit = (rootDir, args) => {
   const result = spawnSync('git', ['-C', rootDir, ...args], {
@@ -108,7 +108,7 @@ test('test glob 只稳定展开受限目录中的直接普通文件', () => {
     const first = resolve(), second = resolve();
     assert.deepEqual(first, second);
     assert.deepEqual(first.descriptor.argv, [
-      '--test', '--test-reporter=dot',
+      '--test', '--test-reporter=dot', '--test-concurrency=4',
       'scripts/mcp/alpha.test.mjs',
       'scripts/mcp/base.test.mjs',
       'scripts/mcp/zeta.test.mjs',

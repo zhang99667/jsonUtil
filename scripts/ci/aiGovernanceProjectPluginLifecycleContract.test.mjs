@@ -51,6 +51,7 @@ test('lifecycle report 单源锁定字段、顺序、trust 边界与 failure 上
 
 test('lifecycle contract 为非法 root 提供固定脱敏 fallback，且 writer 不经 lifecycle façade', async () => {
   assert.equal(projectPluginLifecycleReportRoot(undefined, undefined), INVALID_PROJECT_PLUGIN_ROOT);
+  assert.equal(projectPluginLifecycleReportRoot(undefined, '/private/sensitive-project'), INVALID_PROJECT_PLUGIN_ROOT);
   const lifecycle = await import('./aiGovernanceProjectPluginLifecycle.mjs');
   const writer = await import('./aiGovernanceProjectPluginLockWriter.mjs');
   assert.equal(Object.hasOwn(lifecycle, 'writeProjectPluginLockLifecycle'), false);

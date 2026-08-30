@@ -71,7 +71,7 @@ jobs:
 
       - name: MCP server unit tests
         working-directory: .
-        run: node --test scripts/mcp/*.test.mjs
+        run: node --test --test-concurrency=4 scripts/mcp/*.test.mjs
 
       - name: Project plugin probe tests
         working-directory: .

@@ -35,7 +35,7 @@ const validationRules = [
     command('node scripts/ci/run-ai-evolution-cases.mjs --all', '执行固定白名单中的全部行为 case；component-only 结果仍不得冒充 Agent outcome'),
   ]),
   rule('mcp-runtime', file => hasPrefix(file, ['scripts/mcp/']) || file === '.codex/config.toml' || AI_GOVERNANCE_MCP_CONFIG_FILES.includes(file), [
-    command('node --test --test-reporter=dot scripts/mcp/*.test.mjs', 'MCP 改动必须覆盖真实 stdio、工具清单、资源读取和固定工具调用'),
+    command('node --test --test-reporter=dot --test-concurrency=4 scripts/mcp/*.test.mjs', 'MCP 改动必须以有界并发覆盖真实 stdio、工具清单、资源读取和固定工具调用'),
   ]),
   rule('ci-governance-tests', file => hasPrefix(file, ['scripts/ci/']) && hasSuffix(file, ['.mjs']), [
     command('node --test --test-reporter=dot scripts/ci/*.test.mjs', 'CI 治理脚本或预算规则改动后需要跑脚本单测'),

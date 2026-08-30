@@ -201,7 +201,7 @@ export const writeProjectPluginLockLifecycle = async ({
   } catch (error) {
     const failures = [failureCode(error)];
     if (controlFailureCode && controlFailureCode !== failures[0]) failures.push(controlFailureCode);
-    return report({ root: projectPluginLifecycleReportRoot(root, rootDir), mode: 'write-lock',
+    return report({ root: projectPluginLifecycleReportRoot(root), mode: 'write-lock',
       status: 'blocked', expected, attempted, succeeded, failures });
   }
 };

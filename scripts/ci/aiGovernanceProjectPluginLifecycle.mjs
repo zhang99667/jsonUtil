@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { captureProjectPluginCommand } from './aiGovernanceProjectPluginCommand.mjs';
+import {
+  resolveCodexBinary,
+  runCodexJsonCommand,
+} from './aiGovernanceProjectPluginCommand.mjs';
 import {
   inspectProjectPluginCache,
   projectPluginCacheRoot,
@@ -26,18 +29,6 @@ import {
 import { AI_GOVERNANCE_PROJECT_PLUGIN_NAMES } from './aiGovernanceRequiredProjectPluginLifecycleFiles.mjs';
 
 export { PROJECT_PLUGIN_LIFECYCLE_REPORT_TYPE, PROJECT_PLUGIN_MARKETPLACE };
-
-export const runCodexJsonCommand = async options => {
-  let output;
-  try { output = await captureProjectPluginCommand(options); }
-  catch (error) { throw failure(`CODEX_${typeof error?.code === 'string' ? error.code : 'COMMAND_INTERNAL_ERROR'}`); }
-  try { return JSON.parse(output.toString('utf8')); }
-  catch { throw failure('CODEX_INVALID_JSON'); }
-};
-
-export const resolveCodexBinary = (environment = process.env) => (
-  environment.CODEX_BIN || environment.CODEX_BINARY || 'codex'
-);
 
 const projectRoot = (rootDir) => {
   try {
@@ -328,7 +319,7 @@ export const runProjectPluginLifecycle = async ({
     return report({ root, mode, status: 'applied', inspection, expected,
       attempted: attempted.count, succeeded: succeeded.count, newTaskRequired: attempted.count > 0 });
   } catch (error) {
-    return report({ root: projectPluginLifecycleReportRoot(root, rootDir), mode, status: 'blocked', inspection, expected,
+    return report({ root: projectPluginLifecycleReportRoot(root), mode, status: 'blocked', inspection, expected,
       attempted: attempted.count, succeeded: succeeded.count, newTaskRequired: attempted.count > 0,
       failures: [failureCode(error)] });
   }

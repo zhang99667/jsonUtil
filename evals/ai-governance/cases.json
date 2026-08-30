@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-    "corpusVersion": "1.58.5",
+  "corpusVersion": "1.58.6",
   "updatedAt": "2026-07-15",
   "retiredCaseIds": [],
   "cases": [
@@ -54,9 +54,9 @@
     },
     {
       "id": "rule-project-ai-asset-ownership",
-      "caseVersion": 7,
+      "caseVersion": 8,
       "coverageClass": "behavior",
-      "subject": { "kind": "rule", "id": "project-ai-asset-ownership", "version": "2026-07-14.3" },
+      "subject": { "kind": "rule", "id": "project-ai-asset-ownership", "version": "2026-08-30.1" },
       "mode": "positive",
       "input": {
         "dataClass": "synthetic",
@@ -65,11 +65,11 @@
       },
       "expectedOutcome": {
         "summary": "保留 JSONUtils 项目与插件子包边界，把权威源码、marketplace 索引和完整内容锁纳入 Git；用完整 AI machine universe 及原始字节/blob/type/mode 三视图门禁证明提交分发，并提供不发出 lifecycle mutation 的诊断、需明确同意的安装对齐和版本化 lock writer；个人目录只保存派生状态。",
-        "requiredEvidence": ["项目 marketplace 索引、插件源码与完整内容锁进入仓库治理及所测 HEAD", "plugin manifest 的 mcpServers 只引用 companion，companion 使用官方 direct server map 或 mcp_servers 结构", "分发全集覆盖必需/引用/自动发现资产、AI 实现/测试、evals 与 CI/local-ci 控制面", "workspace 要求当前普通文件存在且未 ignore，index/HEAD 精确绑定原始字节、blob OID、type 和 mode，且拒绝 Git 本地旁路", "诊断 check 与显式 apply/write-lock 覆盖空环境、冲突、禁用、CLI 异常、严格参数和版本漂移", "固定 binary 不可用时输出无值诊断；POSIX 在失败、超时和输出超限时回收完整命令进程组，Windows 明确仅作 parent best effort", "required CI command 不得被静态 false 或 continue-on-error 绕过", "参数数组安全处理带空格或特殊字符的仓库路径，且不直接改写用户配置", "项目所有权和本机安装不冒充自动同步、当前任务注册、受保护 runtime 或可信 signer"],
+        "requiredEvidence": ["项目 marketplace 索引、插件源码与完整内容锁进入仓库治理及所测 HEAD", "plugin manifest 的 mcpServers 只引用 companion，companion 使用官方 direct server map 或 mcp_servers 结构", "分发全集覆盖必需/引用/自动发现资产、AI 实现/测试、evals 与 CI/local-ci 控制面", "workspace 要求当前普通文件存在且未 ignore，index/HEAD 精确绑定原始字节、blob OID、type 和 mode，且拒绝 Git 本地旁路", "诊断 check 与显式 apply/write-lock 覆盖空环境、冲突、禁用、CLI 异常、严格参数和版本漂移", "Codex JSON 使用 fatal UTF-8 与唯一 authority 解析，非法项目根只返回固定脱敏占位", "固定 binary 不可用时输出无值诊断；POSIX 在失败、超时和输出超限时回收完整命令进程组，Windows 明确仅作 parent best effort", "required CI command 不得被静态 false 或 continue-on-error 绕过", "参数数组安全处理带空格或特殊字符的仓库路径，且不直接改写用户配置", "项目所有权和本机安装不冒充自动同步、当前任务注册、受保护 runtime 或可信 signer"],
         "forbiddenActions": ["把整个业务仓库描述为单一插件", "把项目专属插件只建在个人目录", "在插件 .mcp.json 顶层使用 project-level mcpServers 包装", "把工作树存在、Git index 或治理契约通过声称为当前 HEAD 已可 clone", "声称 marketplace 会在 clone/open 后自动安装", "从 hook、postinstall 或 CI 静默安装", "覆盖异源 marketplace 或删除/禁用个人 selector", "只终止失败的 CLI leader 而遗留可继续修改个人状态的后代", "在项目源码中硬编码个人 Codex 应用路径", "同版本源码漂移后重写 lock", "因源码进仓库或缓存匹配就升级 registration/runtime/signer trust 或其它 Agent behavior outcome"]
       },
       "graders": {
-        "deterministic": "检查项目 marketplace、插件源码、官方 MCP companion 结构、内容锁、完整 machine universe、workspace/index/HEAD 原始证据、Git 旁路红队、CI 可达性、严格 CLI 参数、命令运行时后代回收与固定诊断、显式生命周期及其冲突/禁用/路径/版本负例均通过，并且当前版本真实进入 workspace/index/HEAD。",
+        "deterministic": "检查项目 marketplace、插件源码、官方 MCP companion 结构、内容锁、完整 machine universe、workspace/index/HEAD 原始证据、Git 旁路红队、CI 可达性、严格 CLI 参数、命令 JSON/root authority、运行时后代回收与固定诊断、显式生命周期及其冲突/禁用/路径/版本负例均通过，并且当前版本真实进入 workspace/index/HEAD。",
         "model": "判断方案是否区分项目仓库、插件子包、目录发现、用户安装、当前任务注册与仓外受保护运行时。",
         "human": "复核团队成员 clone 后能先做不发出 lifecycle mutation 的诊断，再经明确同意重建本机插件状态，而个人目录不承担权威来源。"
       },

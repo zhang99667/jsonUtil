@@ -16,14 +16,16 @@ const inventoryFor = root => new Set(buildProjectPluginLock(root).plugins.flatMa
 )));
 
 test('write-lock 非法 rootDir 返回脱敏 blocked 报告且 inventory 零调用', async () => {
-  let inventoryCalls = 0;
-  const report = await writeProjectPluginLockLifecycle({
-    rootDir: undefined,
-    listInventory: async () => (inventoryCalls += 1, new Set()),
-  });
-  assert.equal(report.marketplace.expectedRoot, '<invalid-project-root>');
-  assert.deepEqual(report.failures, ['PROJECT_ROOT_INVALID']);
-  assert.equal(inventoryCalls, 0);
+  for (const rootDir of [undefined, '/private/sensitive-project']) {
+    let inventoryCalls = 0;
+    const report = await writeProjectPluginLockLifecycle({
+      rootDir, listInventory: async () => (inventoryCalls += 1, new Set()),
+    });
+    assert.equal(report.marketplace.expectedRoot, '<invalid-project-root>');
+    assert.equal(JSON.stringify(report).includes('sensitive-project'), false);
+    assert.deepEqual(report.failures, ['PROJECT_ROOT_INVALID']);
+    assert.equal(inventoryCalls, 0);
+  }
 });
 
 test('write-lock 的合作式 control lock 拒绝第二个并发 writer', () => withCopy(async (root) => {

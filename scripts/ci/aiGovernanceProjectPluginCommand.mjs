@@ -1,5 +1,8 @@
 import { spawn } from 'node:child_process';
 
+import { parseUniqueJsonAuthority } from './aiGovernanceJsonAuthority.mjs';
+import { projectPluginLifecycleFailure as failure } from './aiGovernanceProjectPluginLifecycleContract.mjs';
+
 const DEFAULT_OUTPUT_LIMIT = 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -68,3 +71,15 @@ export const captureProjectPluginCommand = ({
   child.on('close', code => finish(code === 0 ? null
     : code === 127 ? 'COMMAND_BINARY_UNAVAILABLE' : 'COMMAND_FAILED', Buffer.concat(stdout)));
 });
+
+export const runCodexJsonCommand = async (options) => {
+  let output;
+  try { output = await captureProjectPluginCommand(options); }
+  catch (error) { throw failure(`CODEX_${typeof error?.code === 'string' ? error.code : 'COMMAND_INTERNAL_ERROR'}`); }
+  try { return parseUniqueJsonAuthority(output); }
+  catch { throw failure('CODEX_INVALID_JSON'); }
+};
+
+export const resolveCodexBinary = (environment = process.env) => (
+  environment.CODEX_BIN || environment.CODEX_BINARY || 'codex'
+);

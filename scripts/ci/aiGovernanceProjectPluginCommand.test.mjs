@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { runCodexJsonCommand } from './aiGovernanceProjectPluginLifecycle.mjs';
+import { runCodexJsonCommand } from './aiGovernanceProjectPluginCommand.mjs';
 
 const delay = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -23,6 +23,20 @@ test('Codex shim 以 127 退出时返回固定 binary-unavailable 诊断', async
   }), /CODEX_COMMAND_BINARY_UNAVAILABLE/);
 });
 
+for (const [name, output] of [
+  ['重复 authority', Buffer.from('{"status":"ready","status":"blocked"}')],
+  ['非法 UTF-8', Buffer.from([123, 34, 120, 34, 58, 34, 255, 34, 125])],
+]) test(`Codex CLI ${name} 不得进入 lifecycle`, async () => {
+  const spawnImpl = () => {
+    const child = new EventEmitter(); child.stdout = new EventEmitter(); child.stderr = new EventEmitter();
+    child.kill = () => true;
+    queueMicrotask(() => { child.stdout.emit('data', output); child.emit('close', 0); });
+    return child;
+  };
+  await assert.rejects(runCodexJsonCommand({ binary: 'codex', args: [], cwd: process.cwd(), spawnImpl }),
+    /CODEX_INVALID_JSON/);
+});
+
 const assertDescendantStopped = async (t, scenario) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'jsonutils-plugin-command-'));
   const heartbeat = path.join(root, 'heartbeat');
@@ -33,13 +47,13 @@ const assertDescendantStopped = async (t, scenario) => {
     "const beat = () => fs.appendFileSync(file, 'x');",
     'beat();',
     'const timer = setInterval(beat, 15);',
-    'setTimeout(() => { clearInterval(timer); process.exit(0); }, 1200);',
+    'setTimeout(() => { clearInterval(timer); process.exit(0); }, 5000);',
   ].join('');
   const parentSource = [
-    "import { spawn } from 'node:child_process';",
+    "import { spawn } from 'node:child_process';import fs from 'node:fs';",
     'const [file, source] = process.argv.slice(1);',
     "spawn(process.execPath, ['--input-type=module', '-e', source, file], { stdio: 'ignore' });",
-    'await new Promise(resolve => setTimeout(resolve, 120));',
+    'const deadline=Date.now()+1000;while(!fs.existsSync(file)&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,10));',
     scenario.parentTail,
   ].join('');
   await assert.rejects(runCodexJsonCommand({
@@ -50,6 +64,7 @@ const assertDescendantStopped = async (t, scenario) => {
     timeoutMs: scenario.timeoutMs,
   }), scenario.expectedFailure);
   await delay(120);
+  assert.equal(fs.existsSync(heartbeat), true, 'descendant did not start');
   const firstSize = fs.statSync(heartbeat).size;
   await delay(180);
   assert.equal(fs.statSync(heartbeat).size, firstSize);
@@ -74,7 +89,7 @@ for (const scenario of [
     name: '命令超时',
     parentTail: 'setInterval(() => {}, 1000);',
     outputLimit: 1024,
-    timeoutMs: 180,
+    timeoutMs: 1_200,
     expectedFailure: /CODEX_COMMAND_TIMEOUT/,
   },
 ]) test(`Codex CLI ${scenario.name}后回收同一 POSIX 进程组的后代`, {

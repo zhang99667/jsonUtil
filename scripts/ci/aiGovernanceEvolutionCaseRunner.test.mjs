@@ -50,7 +50,7 @@ test('AI evolution case runner 只执行固定白名单命令', () => {
   });
 });
 
-test('项目资产所有权 v7 评分官方 MCP 结构、原始 Git 证据与显式团队生命周期', () => {
+test('项目资产所有权 v8 评分官方 MCP 结构、原始 Git 证据与有界验证命令', () => {
   withCorpus((rootDir) => {
     const report = runAiGovernanceEvolutionCases({
       rootDir,
@@ -59,7 +59,7 @@ test('项目资产所有权 v7 评分官方 MCP 结构、原始 Git 证据与显
     });
     assert.equal(report.results[0].outcomeEligible, true);
     assert.equal(report.results[0].evidenceScope, 'deterministic-case');
-    assert.equal(report.results[0].validations.length, 4);
+    assert.equal(report.results[0].validations.length, 5);
     assert.match(report.results[0].evidence.join('\n'), /不证明任意真实用户安装/);
   });
 });

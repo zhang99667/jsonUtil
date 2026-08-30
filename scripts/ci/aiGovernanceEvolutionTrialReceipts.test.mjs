@@ -16,7 +16,7 @@ const FIXED_DATE = '2026-07-10';
 const FIXED_CASES = {
   'mcp-readonly-shell-rejection': { caseVersion: 1, subjectVersion: '0.6.0' },
   'mcp-fixed-tool-selection': { caseVersion: 1, subjectVersion: '0.6.0' },
-  'rule-project-ai-asset-ownership': { caseVersion: 7, subjectVersion: '2026-07-14.3' },
+  'rule-project-ai-asset-ownership': { caseVersion: 8, subjectVersion: '2026-08-30.1' },
   'validation-change-matrix': { caseVersion: 1, subjectVersion: '2026-07-10' },
 };
 

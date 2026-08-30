@@ -20,11 +20,12 @@ const command = (id, displayCommand, executable, argv, envProfile, timeout) => (
   id, displayCommand, executable, argv, envProfile, timeout,
 });
 
-const testCommand = (id, displayCommand, testDirectory, timeout) => ({
+const testCommand = (id, displayCommand, testDirectory, timeout, testArgs = []) => ({
   id,
   displayCommand,
   executable: 'node',
   testDirectory,
+  testArgs,
   envProfile: 'jsonutils-validation-node-v1',
   timeout,
 });
@@ -35,7 +36,8 @@ const COMMAND_SPECS = Object.freeze([
   command('check-governance-artifacts', 'node scripts/ci/write-ai-governance-artifacts.mjs --check --json', 'node', ['scripts/ci/write-ai-governance-artifacts.mjs', '--check', '--json'], 'jsonutils-validation-node-v1', 180_000),
   command('check-evolution-evals', 'node scripts/ci/check-ai-evolution-evals.mjs --json', 'node', ['scripts/ci/check-ai-evolution-evals.mjs', '--json'], 'jsonutils-validation-node-v1', 180_000),
   command('run-evolution-cases', 'node scripts/ci/run-ai-evolution-cases.mjs --all', 'node', ['scripts/ci/run-ai-evolution-cases.mjs', '--all'], 'jsonutils-validation-node-v1', 600_000),
-  testCommand('test-mcp', 'node --test --test-reporter=dot scripts/mcp/*.test.mjs', 'scripts/mcp', 600_000),
+  testCommand('test-mcp', 'node --test --test-reporter=dot --test-concurrency=4 scripts/mcp/*.test.mjs',
+    'scripts/mcp', 600_000, ['--test-concurrency=4']),
   testCommand('test-ci', 'node --test --test-reporter=dot scripts/ci/*.test.mjs', 'scripts/ci', 900_000),
   command('check-version-consistency', 'node scripts/ci/check-version-consistency.mjs', 'node', ['scripts/ci/check-version-consistency.mjs'], 'jsonutils-validation-node-v1', 60_000),
   command('check-deploy-shell-syntax', 'node scripts/ci/check-deploy-shell-syntax.mjs', 'node', ['scripts/ci/check-deploy-shell-syntax.mjs'], 'jsonutils-validation-node-v1', 120_000),
@@ -140,7 +142,7 @@ export const hashJsonutilsValidationCommandDescriptor = (descriptor) => {
 
 const materialize = (spec, rootDir) => {
   const argv = spec.testDirectory
-    ? ['--test', '--test-reporter=dot', ...expandTestFiles(rootDir, spec.testDirectory)]
+    ? ['--test', '--test-reporter=dot', ...spec.testArgs, ...expandTestFiles(rootDir, spec.testDirectory)]
     : [...spec.argv];
   const descriptor = Object.freeze({
     executable: spec.executable,

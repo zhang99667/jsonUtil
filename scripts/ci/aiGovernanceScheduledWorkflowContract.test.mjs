@@ -29,7 +29,7 @@ const validWorkflow = [
   `      - uses: ${AI_GOVERNANCE_ATTESTATION_ACTIONS.setupNode}`,
   '      - run: node scripts/ci/check-version-consistency.mjs',
   '      - run: node --test scripts/ci/*.test.mjs',
-  '      - run: node --test scripts/mcp/*.test.mjs',
+  '      - run: node --test --test-concurrency=4 scripts/mcp/*.test.mjs',
   '      - run: node scripts/ci/check-ai-evolution-evals.mjs',
   '      - run: node scripts/ci/check-ai-asset-distribution.mjs --head',
   '      - if: always()',
